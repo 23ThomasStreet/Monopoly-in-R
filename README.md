@@ -8,7 +8,7 @@ results. (NOTE TO SELF: "I should try using R.shiny for my game.")
 (Figure 1. – Real game board of Monopoly)
 ![Real game board of Monopoly](https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/monopolyReal.jpeg?raw=true?)
 
-<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/monopolyReal.jpeg?raw=true?" width="48">
+<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/monopolyReal.jpeg?raw=true?" width="250">
 
 ![View of current game graphics](https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/boardTest.png?raw=true)
 (Figure 2. – View of current game graphics.)

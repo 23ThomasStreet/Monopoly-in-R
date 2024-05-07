@@ -1,4 +1,4 @@
-_**Monopoly_R V.1.0:**_
+_**Monopoly_R V.1.0**_
 
 Monopoly in R is a Monopoly simulator to quickly simulate a select amount of games
 and get descriptive statistics of the outcomes. The project is made to be easy to 

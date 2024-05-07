@@ -5,7 +5,7 @@ and get descriptive statistics of the outcomes. The project is made to be easy t
 tweak so that the user can see how different rules in Monopoly produce different 
 results.
 
-<code style="color : orangered">(NOTE TO SELF: "I should try using R.shiny for my game.")</code>
+<code style="color : red">(NOTE TO SELF: "I should try using R.shiny for my game.")</code>
 
 <img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/monopolyReal.jpeg?raw=true?" width="600">
 (Figure 1. – Real game board of Monopoly)

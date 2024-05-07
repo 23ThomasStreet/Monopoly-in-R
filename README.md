@@ -14,6 +14,7 @@ results.
 (Figure 2. – View of current game graphics.)
 
 
+
 **Included in this version:**
 * One simulated player
 * Implemented board and player graphics

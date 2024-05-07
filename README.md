@@ -11,6 +11,7 @@ results. (NOTE TO SELF: "I should try using R.shiny for my game.")
 <img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/boardTest.png?raw=true?" width="600">
 (Figure 2. – View of current game graphics.)
 
+
 **Included in this version:**
 * One simulated player
 * Implemented board and player graphics

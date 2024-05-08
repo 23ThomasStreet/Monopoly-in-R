@@ -7,10 +7,10 @@ results.
 
 <code style="color : red"> NOTE TO SELF: I should try using R.shiny for my game. </code>
 
-<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/monopolyReal.jpeg?raw=true?" width="600">
+<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main-v.2/monopolyReal.jpeg?raw=true?" width="600">
 (Figure 1. – Real game board of Monopoly)
 
-<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main/boardTest.png?raw=true?" width="600">
+<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main-v.2/boardTest.png?raw=true?" width="600">
 (Figure 2. – View of current game graphics.)
 
 

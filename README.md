@@ -10,7 +10,7 @@ results.
 <img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main-v.2/monopolyReal.jpeg?raw=true?" width="600">
 (Figure 1. – Real game board of Monopoly)
 
-<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main-v.2/boardTest.png?raw=true?" width="600">
+<img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main-v.2/boardTest_v2.png?raw=true?" width="600">
 (Figure 2. – View of current game graphics.)
 
 

@@ -1,4 +1,4 @@
-_**Monopoly_R V.1.0**_
+_**Monopoly_R V.2.0**_
 
 Monopoly in R is a Monopoly simulator to quickly simulate a select amount of games
 and get descriptive statistics of the outcomes. The project is made to be easy to 
@@ -16,10 +16,10 @@ results.
 
 
 **Included in this version:**
-* One simulated player
-* Implemented board and player graphics
-* Rules for player movement
-* Semi-functional jail
-* Functional $200 GO!
-* Semi-funcional house and hotel buy-function
-* Functional real-time simulation statistics
+* --..-- Ver.1
+* Funcional house and hotel buy-function
+* More generic functions and game loop
+* Argument support for main game loop function. Current arguments are: simulation speed, player_A colour, number of times to loop
+* More readable code through spliting game loop into functions and Quarto code chunks
+* Descriptive statistics simulation output
+* Left hand side space for real time stats, such as round count

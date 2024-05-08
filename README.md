@@ -14,7 +14,6 @@ results.
 (Figure 2. – View of current game graphics.)
 
 
-
 **Included in this version:**
 * --..-- Ver.1
 * Funcional house and hotel buy-function

@@ -19,10 +19,12 @@ results.
 
 
 **Included in this version:**
-* --..-- Ver.1
-* Funcional house and hotel buy-function
-* More generic functions and game loop
-* Argument support for main game loop function. Current arguments are: simulation speed, player_A colour, number of times to loop
+* --..-- Ver.2
+* Improved graphics
+* Partial Chance and Community Chest (CC) implementation
+* Chance and CC graphics and print-out
 * More readable code through spliting game loop into functions and Quarto code chunks
-* Descriptive statistics simulation output
-* Left hand side space for real time stats, such as round count
+
+**Wishlist for V.4.0:**
+* Decision tree logic for mortgaging property when balance is 0 kr
+* Mortgaged property graphics

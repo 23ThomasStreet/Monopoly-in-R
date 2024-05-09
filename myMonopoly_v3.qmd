@@ -1,0 +1,1108 @@
+---
+title: "myMonopolyQuarto"
+format: html
+editor: visual
+---
+
+# myMonopoly v.1
+
+The goal of this project is to simulate Monopoly in R in order to see if Georgist rules outperform the regular rules in tax-dollars collected and in the fairness of the game (measured in how slowly the game reaches a state of monopoly).
+
+## Game Logic
+
+Player Movement, Functions
+
+```{r}
+X11() # sets the default device to X11 for plotting in a separate window
+source("boardGraphics.R")
+source("gameBoardData.R")
+
+## Player A Starting Position, GO!-point coordinates
+points(gameBoard$XtileCoordinate[1], 
+       gameBoard$YtileCoordinate[1],
+       type = "p",
+       pch = 16,
+       col = player_A_data$color)
+
+## Player B Starting Position, GO!-point coordinates
+points(gameBoard$XtileCoordinate[1], 
+       gameBoard$YtileCoordinate[1],
+       type = "p",
+       pch = 16,
+       col = player_B_data$color)
+
+#### Dice Function ####
+dice <- function(n_dice){
+  dice_res <- sample(1:6, n_dice)
+  dice_res <- sum(dice_res)
+  return(dice_res)
+}
+
+#### Player Movement Function ####
+movePlayer <- function(tilePos, player_Data){
+  roll <- dice(2)
+  updatePos <- tilePos + roll
+  
+  points(gameBoard$XtileCoordinate[tilePos], 
+         gameBoard$YtileCoordinate[tilePos],
+         type = "p",
+         pch = 16,
+         col = "white")
+  points(gameBoard$XtileCoordinate[updatePos], 
+         gameBoard$YtileCoordinate[updatePos],
+         type = "p",
+         pch = 16,
+         col = player_Data$color) 
+  tilePos <- updatePos
+  if (tilePos > 40){
+    points(gameBoard$XtileCoordinate[(tilePos - updatePos)], 
+           gameBoard$YtileCoordinate[(tilePos - updatePos)],
+           type = "p",
+           pch = 16,
+           col = "white")
+    tilePos <- tilePos - 40
+    points(gameBoard$XtileCoordinate[tilePos], 
+           gameBoard$YtileCoordinate[tilePos],
+           type = "p",
+           pch = 16,
+           col = player_Data$color) 
+    print("New GO!")
+    player_Data$money <- player_Data$money + 200
+    moveList <- list(tilePos, player_Data)
+    return(moveList)
+  } else {
+    moveList <- list(tilePos, player_Data)
+    return(moveList)
+  }
+}
+```
+
+Chance, Function
+
+```{r}
+chanceFunc <- function(tilePos, player_Data){
+  dice_sum <- dice(3)
+  chanceEvents_DF <- data.frame(
+    c(3:18), 
+    c("3#? Get out of jail-card.",
+      "4#? Pay speeding ticket.",
+      "5#? Street maintenance. 40 kr/house, 40 kr/hotel.",
+      "6#? Property repair. 25 kr/house, 100kr/hotel.",
+      "7#? Crossword price.",
+      "8#? Go to Pennsylvania Stat. If pass GO, reap reward.",
+      "9#? Go to JAIL!",
+      "10#? Go to Illinois Av. If pass GO, take reward.",
+      "11#? Payment on buildingloan.",
+      "12#? Back three steps.",
+      "13#? Go to GO!",
+      "14#? Go to Boardwalk.",
+      "15#? Go to St. Charles Place. If pass GO, reap reward.",
+      "16#? Pay kindergarten fee.",
+      "17#? Pay insider fine.",
+      "18#? Gather savings interest.")
+    )
+
+  if (dice_sum == 3){
+    next
+  } else if (dice_sum == 4){
+    player_Data$money <- player_Data$money - 15
+  } else if (dice_sum == 5){
+    # ???
+    gB_prop_DF <- data.frame(table(gameBoard$property_player_A))
+    print(gB_prop_DF)
+  } else if (dice_sum == 6){
+    # ???
+    gB_prop_DF <- data.frame(table(gameBoard$property_player_A))
+    print(gB_prop_DF)
+  } else if (dice_sum == 7){
+    player_Data$money <- player_Data$money + 100
+  } else if (dice_sum == 8){
+    if (tilePos < 15){
+      tilePos <- 15
+    } else {
+      player_Data$money <- player_Data$money + 200
+      tilePos <- 15
+    }
+  } else if (dice_sum == 9){
+    tilePos <- 11
+  } else if (dice_sum == 10){
+    if (tilePos < 25){
+      tilePos <- 25
+    } else {
+      player_Data$money <- player_Data$money + 200
+      tilePos <- 25
+    }
+  } else if (dice_sum == 11){
+    player_Data$money <- player_Data$money + 150
+  } else if (dice_sum == 12){
+    tilePos <- tilePos - 3
+  } else if (dice_sum == 13){
+    tilePos <- 1
+  } else if (dice_sum == 14){
+    tilePos <- 40
+  } else if (dice_sum == 15){
+    if (tilePos < 12){
+      tilePos <- 12
+    } else {
+      player_Data$money <- player_Data$money + 200
+      tilePos <- 12
+    }
+  } else if (dice_sum == 16){
+    player_Data$money <- player_Data$money - 150
+  } else if (dice_sum == 17){
+    player_Data$money <- player_Data$money - 20
+  } else {
+    player_Data$money <- player_Data$money + 50
+  }
+  
+  event <- chanceEvents_DF[dice_sum, 2]
+  chanceEventList <- list(tilePos, player_Data, dice_sum, event)
+  return(chanceEventList)
+}
+```
+
+Community Chest, Function
+
+```{r}
+communityChestFunc <- function(tilePos, player_Data){
+  dice_sum <- dice(3)
+  communityEvents_DF <- data.frame(
+    c(3:18), 
+    c("3#CC Get out of jail-card.",
+      "4#CC Dentistpay.",
+      "5#CC Pre-sold stock return.",
+      "6#CC Mis-calc in your favour.",
+      "7#CC Second-place in pageant.",
+      "8#CC Divy on taxes.",
+      "9#CC Go to JAIL!",
+      "10#CC Pay insurance-premium.",
+      "11#CC Annuity expires.",
+      "12#CC Inheritance.",
+      "13#CC Go to GO!",
+      "14#CC Go to Mediterranean Av.",
+      "15#CC Dividend on preference shares.",
+      "16#CC Pay 10 kr in fines or chanse.",
+      "17#CC Happy birthday! Take 10 kr / player.",
+      "18#CC Private doctor fee.")
+    )
+
+  if (dice_sum == 3){
+    next
+  } else if (dice_sum == 4){
+    player_Data$money <- player_Data$money - 100
+  } else if (dice_sum == 5){
+    player_Data$money <- player_Data$money + 50
+  } else if (dice_sum == 6){
+    player_Data$money <- player_Data$money + 200
+  } else if (dice_sum == 7){
+    player_Data$money <- player_Data$money + 10
+  } else if (dice_sum == 8){
+    player_Data$money <- player_Data$money + 20
+  } else if (dice_sum == 9){
+    tilePos <- 11
+  } else if (dice_sum == 10){
+    player_Data$money <- player_Data$money - 50
+  } else if (dice_sum == 11){
+    player_Data$money <- player_Data$money + 100
+  } else if (dice_sum == 12){
+    player_Data$money <- player_Data$money + 100
+  } else if (dice_sum == 13){
+    tilePos <- 1
+  } else if (dice_sum == 14){
+    tilePos <- 2
+  } else if (dice_sum == 15){
+    player_Data$money <- player_Data$money + 25
+  } else if (dice_sum == 16){
+    res <- rbinom(1, 1, 0.5)
+    if (res == 0){
+      player_Data$money <- player_Data$money - 10
+    } else {
+      randomEventFunc(tilePos, player_Data)
+    }
+  } else if (dice_sum == 17){
+    player_Data$money <- player_Data$money + 10
+  } else {
+    player_Data$money <- player_Data$money - 50
+  }
+  
+  event <- communityEvents_DF[dice_sum, 2]
+  CCEventList <- list(tilePos, player_Data, dice_sum, event)
+  return(CCEventList)
+}
+```
+
+Draw Houses, Function
+
+```{r}
+drawHousesFunc <- function(tilePos, player_Data){
+  if (gameBoard$tileNr[tilePos] <= 11) {
+          
+          if (gameBoard$property_player_A[tilePos] == "0" 
+              & 
+              player_Data$money >= gameBoard$house_1_Cost[tilePos]) {
+            
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "1", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "1"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "1" 
+                     & 
+                     player_Data$money >= gameBoard$house_2_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "1", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "2", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "2"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "2" 
+                     & 
+                     player_Data$money >= gameBoard$house_3_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "2", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "3", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "3"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "3" 
+                     & 
+                     player_Data$money >= gameBoard$house_4_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "3", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "4", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "4"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "4" 
+                     & 
+                     player_Data$money >= gameBoard$house_hotel_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "4", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] + 0.035, 
+              "H", 
+              col = "red", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "H"
+          
+          }
+    
+          
+        } else if (gameBoard$tileNr[tilePos] >= 12 
+             & 
+             gameBoard$tileNr[tilePos]<= 21) {
+          
+          if (gameBoard$property_player_A[tilePos] == "0" 
+              & 
+              player_Data$money >= gameBoard$house_1_Cost[tilePos]) {
+            
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "1", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 90
+              )
+            gameBoard$property_player_A[tilePos] <<- "1"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "1" 
+                     & 
+                     player_Data$money >= gameBoard$house_2_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "1", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 90
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "2", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 90
+              )
+            gameBoard$property_player_A[tilePos] <<- "2"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "2" 
+                     & 
+                     player_Data$money >= gameBoard$house_3_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "2", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 90
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "3", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 90
+              )
+            gameBoard$property_player_A[tilePos] <<- "3"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "3" 
+                     & 
+                     player_Data$money >= gameBoard$house_4_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "3", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 90
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "4", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 90
+              )
+            gameBoard$property_player_A[tilePos] <<- "4"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "4" 
+                     & 
+                     player_Data$money >= gameBoard$house_hotel_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "4", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 90
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] + 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "H", 
+              col = "red", 
+              cex = 0.95, 
+              srt = 90
+              )
+            gameBoard$property_player_A[tilePos] <<- "H"
+          
+          }
+          
+        } else if (gameBoard$tileNr[tilePos] >= 21 
+             & 
+             gameBoard$tileNr[tilePos]<= 31) {
+          
+          if (gameBoard$property_player_A[tilePos] == "0" 
+              & 
+              player_Data$money >= gameBoard$house_1_Cost[tilePos]) {
+            
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "1", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "1"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "1" 
+                     & 
+                     player_Data$money >= gameBoard$house_2_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "1", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "2", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "2"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "2" 
+                     & 
+                     player_Data$money >= gameBoard$house_3_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "2", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "3", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "3"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "3" 
+                     & 
+                     player_Data$money >= gameBoard$house_4_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "3", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "4", 
+              col = "green", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "4"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "4" 
+                     & 
+                     player_Data$money >= gameBoard$house_hotel_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "4", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos], 
+              gameBoard$YtileCoordinate[tilePos] - 0.035, 
+              "H", 
+              col = "red", 
+              cex = 0.95, 
+              )
+            gameBoard$property_player_A[tilePos] <<- "H"
+          
+          }
+          
+        } else {
+          
+          if (gameBoard$property_player_A[tilePos] == "0" 
+              & 
+              player_Data$money >= gameBoard$house_1_Cost[tilePos]) {
+            
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "1", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 270
+              )
+            gameBoard$property_player_A[tilePos] <<- "1"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "1" 
+                     & 
+                     player_Data$money >= gameBoard$house_2_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "1", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 270
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "2", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 270
+              )
+            gameBoard$property_player_A[tilePos] <<- "2"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "2" 
+                     & 
+                     player_Data$money >= gameBoard$house_3_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "2", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 270
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "3", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 270
+              )
+            gameBoard$property_player_A[tilePos] <<- "3"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "3" 
+                     & 
+                     player_Data$money >= gameBoard$house_4_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "3", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 270
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "4", 
+              col = "green", 
+              cex = 0.95, 
+              srt = 270
+              )
+            gameBoard$property_player_A[tilePos] <<- "4"
+          
+          } else if (gameBoard$property_player_A[tilePos] == "4" 
+                     & 
+                     player_Data$money >= gameBoard$house_hotel_Cost[tilePos]
+                     ) {
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "4", 
+              col = player_Data$color, 
+              cex = 0.95, 
+              srt = 270
+              )
+            text(
+              gameBoard$XtileCoordinate[tilePos] - 0.035, 
+              gameBoard$YtileCoordinate[tilePos], 
+              "H", 
+              col = "red", 
+              cex = 0.95, 
+              srt = 270
+              )
+            gameBoard$property_player_A[tilePos] <<- "H"
+          
+          }
+          
+        }
+}
+```
+
+Game Loop
+
+```{r}
+#### Game Loop ####
+gameLoop <- function(framePause, 
+                     playerA_Col, 
+                     playerB_Col, 
+                     n_loops, 
+                     player_Data,
+                     tilePos) {
+  
+  ## Data Colecting [START] ##
+  visited_tiles <- c()
+  ts_balance <- c()
+  ## Data Colecting [END] ##
+  
+  for (i in 1:n_loops) {
+    
+    ## Simulation Readout, Console [START] ##
+    print(
+    c("tileNr:" = gameBoard$tileNr[tilePos], 
+      "tileType:" = gameBoard$tileType[tilePos], 
+      "ownedBy:" = gameBoard$ownedBy[tilePos],
+      "player_A money:" = player_Data$money)
+    )
+    ## Simulation Readout, Console [END] ##
+    
+    ## Game Stats, Graphics [START] ##
+    text(
+      0.74, 
+      0.8, 
+      "'roundNr':", 
+      col = "black", 
+      cex = 0.95, 
+    )
+    text(
+      0.84, 
+      0.8, 
+      i, 
+      col = "blue", 
+      cex = 0.95, 
+    )
+    ## Game Stats, Graphics [END] ##
+    
+    ## Player Stats, Graphics [START] ## 
+    text(
+      1.05, 
+      0.8, 
+      "'tileNr':", 
+      col = player_Data$color, 
+      cex = 0.95, 
+    )
+    text(
+      1.11, 
+      0.8, 
+      gameBoard$tileNr[tilePos], 
+      col = "blue", 
+      cex = 0.95, 
+    )
+    
+    text(
+      1.2, 
+      0.8, 
+      "'tileType':", 
+      col = player_Data$color, 
+      cex = 0.95, 
+    )
+    text(
+      1.32, 
+      0.8, 
+      gameBoard$tileType[tilePos], 
+      col = "blue", 
+      cex = 0.95, 
+    )
+    
+    text(
+      1.08, 
+      0.76, 
+      "'ownedBy':", 
+      col = player_Data$color, 
+      cex = 0.95, 
+    )
+    text(
+      1.2, 
+      0.76, 
+      gameBoard$ownedBy[tilePos], 
+      col = "blue", 
+      cex = 0.95, 
+    )
+    
+    text(
+      1.3, 
+      0.76, 
+      player_Data$money, 
+      col = "darkgreen", 
+      cex = 0.95, 
+    )
+    text(
+      1.38, 
+      0.76, 
+      "$", 
+      col = "darkgreen", 
+      cex = 0.95, 
+    )
+    
+    if (gameBoard$tileType[tilePos] == "I") {
+      player_Data$money <- player_Data$money - 200
+      print("Action: pay income tax.")
+      text(
+        1.2, 
+        0.85, 
+        "Action: pay income tax.", 
+        col = player_Data$color, 
+        cex = 0.95, 
+      )
+    } else if (gameBoard$tileType[tilePos] == "S") {
+      player_Data$money <- player_Data$money - 100
+      print("Action: pay super tax.")
+      text(
+        1.2, 
+        0.85, 
+        "Action: pay super tax.", 
+        col = player_Data$color, 
+        cex = 0.95, 
+      )
+    } else if (gameBoard$tileType[tilePos] == "CC"){
+      randCC <- communityChestFunc(tilePos, player_Data)
+      # update player #
+      points(gameBoard$XtileCoordinate[tilePos], 
+             gameBoard$YtileCoordinate[tilePos],
+             type = "p",
+             pch = 16,
+             col = "white")
+      tilePos <- randCC[[1]]
+      player_Data <- randCC[[2]]
+      dice_sum <- randCC[[3]]
+      event <- randCC[[4]]
+      print(event)
+      text(
+        1.2, 
+        0.85, 
+        paste0("CC#:", dice_sum), 
+        col = player_Data$color, 
+        cex = 0.95, 
+      )
+      
+    } else if (gameBoard$tileType[tilePos] == "?"){
+      randChance <- chanceFunc(tilePos, player_Data)
+      # update player #
+      points(gameBoard$XtileCoordinate[tilePos], 
+             gameBoard$YtileCoordinate[tilePos],
+             type = "p",
+             pch = 16,
+             col = "white")
+      tilePos <- randChance[[1]]
+      player_Data <- randChance[[2]]
+      dice_sum <- randChance[[3]]
+      event <- randChance[[4]]
+      print(event)
+      text(
+        1.2, 
+        0.85, 
+        paste0("?#:", dice_sum), 
+        col = player_Data$color, 
+        cex = 0.95, 
+      )
+      
+    } else if (gameBoard$tileType[tilePos] == "GT_J") {
+      print("Action: go to jail!")
+      text(
+        1.2, 
+        0.85, 
+        "Action: go to jail!", 
+        col = player_Data$color, 
+        cex = 0.95, 
+      )
+      points(gameBoard$XtileCoordinate[tilePos], 
+             gameBoard$YtileCoordinate[tilePos],
+             type = "p",
+             pch = 16,
+             col = "white")
+      tilePos <- 11
+      points(gameBoard$XtileCoordinate[tilePos], 
+             gameBoard$YtileCoordinate[tilePos],
+             type = "p",
+             pch = 16,
+             col = player_Data$color)
+    ## Player Stats, Graphics [END] ##
+    
+    ## Player Buy Tiles, Graphics [START] ##
+    } else if (gameBoard$ownedBy[tilePos] == "none" 
+    &
+    player_Data$money >= gameBoard$tileCost[tilePos]){
+  
+      print("Action: buy.")
+      text(
+        1.2, 
+        0.85, 
+        "Action: buy.", 
+        col = player_Data$color, 
+        cex = 0.95, 
+      )
+      
+      a <- masterTileList[[tilePos]][1]
+      b <- masterTileList[[tilePos]][2]
+      
+      if (gameBoard$tileNr[tilePos] <= 11) {
+        polygon(
+          c(a[[1]][1], 
+            a[[1]][3], 
+            a[[1]][2],
+            a[[1]][4]),
+        
+          c(b[[1]][1],
+            b[[1]][2],
+            b[[1]][3], 
+            b[[1]][4]),
+        
+            col = player_Data$color,
+            border = "black"
+          )
+        
+      } else if (gameBoard$tileNr[tilePos] >= 12 
+             & 
+             gameBoard$tileNr[tilePos]<= 21) {
+        polygon(
+          c(a[[1]][4], 
+            a[[1]][1], 
+            a[[1]][2],
+            a[[1]][3]),
+      
+          c(b[[1]][2],
+            b[[1]][4],
+            b[[1]][3], 
+            b[[1]][1]),
+      
+          col = player_Data$color,
+          border = "black"
+          )
+    
+      } else if (gameBoard$tileNr[tilePos] >= 21 
+             & 
+             gameBoard$tileNr[tilePos]<= 31) {
+        polygon(
+          c(a[[1]][1], 
+            a[[1]][3], 
+            a[[1]][2],
+            a[[1]][4]),
+      
+          c(b[[1]][1],
+            b[[1]][2],
+            b[[1]][3], 
+            b[[1]][4]),
+      
+          col = player_Data$color,
+          border = "black"
+          )
+    
+      } else {
+        polygon(
+          c(a[[1]][4], 
+            a[[1]][1], 
+            a[[1]][2],
+            a[[1]][3]),
+      
+          c(b[[1]][2],
+            b[[1]][4],
+            b[[1]][3], 
+            b[[1]][1]),
+      
+          col = player_Data$color,
+          border = "black"
+        )
+        }
+  
+      player_Data$money <- player_Data$money -
+      gameBoard$tileCost[tilePos]
+  
+      gameBoard$ownedBy[tilePos] <<- "player_A"
+      ## Player Buy Tile, Graphics [END] ##
+      
+      ## Player Buy Housing, Graphics [START] ##
+      } else if (
+        sum(gameBoard$tileType[gameBoard$ownedBy == "player_A"] 
+        == gameBoard$tileType[tilePos]) == 3 
+        || 
+        sum(gameBoard$tileType[gameBoard$ownedBy == "player_A"] 
+        == gameBoard$tileType[tilePos]) == 2 && 
+        "brown" %in% gameBoard$tileType[tilePos] 
+        || 
+        sum(gameBoard$tileType[gameBoard$ownedBy == "player_A"] 
+        == gameBoard$tileType[tilePos]) == 2 && 
+        "blue" %in% gameBoard$tileType[tilePos]
+        ){
+        
+        cat("You got a full colour group in",    
+        gameBoard$tileType[tilePos])
+        
+        drawHousesFunc(tilePos, player_Data)
+        
+      } else {
+        print("Action: too expensive.")
+        text(
+          1.2, 
+          0.85, 
+          "Action: too expensive.", 
+          col = player_Data$color, 
+          cex = 0.95, 
+        )
+      }
+    ## Player Buy Housing, Graphics [END] ##
+    
+    Sys.sleep(framePause)
+    
+    # clear Stat Graphics #
+    polygon(
+    c(0.68, 0.89, 0.89, 0.68), 
+    c(0.95, 0.95, 0.725, 0.725),
+    col = "white",
+    border = "white"
+    )
+    
+    polygon(
+    c(1, 1.4, 1.4, 1), 
+    c(0.95, 0.95, 0.725, 0.725),
+    col = "white",
+    border = "white"
+    )
+    
+    ## Data Collecting [START] ##
+    visited_tiles <- append(visited_tiles, tilePos)
+    ts_balance <- append(ts_balance, player_Data$money)
+    ## Data Collecting [END] ##
+    
+    # update player #
+    movePlayer_Output <- movePlayer(tilePos, player_Data)
+    tilePos <- movePlayer_Output[[1]]
+    player_Data <- movePlayer_Output[[2]]
+    print(player_Data)
+  }
+  ## Print and Return Data [START] ##
+  print("Printing dfSimOutput, player_A:")
+  n_rounds <- length(visited_tiles)
+  dfSimOutput <- data.frame(
+                    visited_tiles = table(visited_tiles,
+                                          dnn = "TileNr")
+                    )
+  outputList <- list(
+                     "n_rounds" = n_rounds, 
+                     "ts_balance" = ts_balance,
+                     "dfSimOutput" = dfSimOutput
+                     )
+  return(outputList)
+  ## Print and Return Data [END] ##
+}
+
+```
+
+Simulation Settings
+
+```{r}
+X11() # sets the default device to X11 for plotting in a sperate window
+source("boardGraphics.R")
+source("gameBoardData.R")
+
+#### gameLoop Inputs ####
+framePause <- 0.5
+n_loops <- 300
+playerA_Col <- "purple1"
+playerB_Col <- "tan"
+tilePos <- 1
+
+#### Player A Data ####
+player_A_data <- data.frame(
+  "money" = 1500,
+  "color" = playerA_Col
+)
+
+#### Player B Data ####
+player_B_data <- data.frame(
+  "money" = 1500,
+  "color" = playerB_Col
+)
+
+#### Simulation Results ####
+myRecord <- gameLoop(framePause, 
+                     playerA_Col = playerA_Col, 
+                     playerB_Col = playerB_Col, 
+                     n_loops = n_loops, 
+                     player_Data = player_A_data,
+                     tilePos = tilePos)
+myRecord
+
+```
+
+Debugging
+
+```{r}
+myTestFunc <- function(a, b){
+  a <- 10 + a
+  b <- 5 + b
+  myTestList <- list("a" = a, "b" = b)
+  return(myTestList)
+}
+a <- 1
+b <- 2
+
+extract <- myTestFunc(a, b)
+extract$a
+
+####
+dice <- function(n_dice){
+  dice_res <- sample(1:6, n_dice)
+  dice_res <- sum(dice_res)
+  return(dice_res)
+}
+
+randomEventFunc <- function(tilePos, player_Data){
+  dice_sum <- dice(3)
+  communityEvents_DF <- data.frame(
+    c(3:18), 
+    c("Get out of jail-card.",
+      "Dentistpay.",
+      "Pre-sold stock return.",
+      "Mis-calc in your favour.",
+      "Second-place in pageant.",
+      "Divy on taxes.",
+      "Go to JAIL!",
+      "Pay insurance-premium.",
+      "Annuity expires.",
+      "Inheritance.",
+      "Go to GO!",
+      "Go to Mediterranean Av.",
+      "Dividend on preference shares.",
+      "Pay 10 kr in fines or chanse.",
+      "Happy birthday! Take 10 kr / player.",
+      "Private doctor fee.")
+    )
+  
+  if (dice_sum == 3){
+    print("You are out of Jail!")
+  } else if (dice_sum == 4){
+    player_Data$money <- player_Data$money - 100
+  }
+  
+  event <- communityEvents_DF[dice_sum, 2]
+  randEventList <- list(dice_sum, event, tilePos, player_Data)
+  return(randEventList)
+}
+
+tilePos <- 1
+player_Data <- c("Nuttisen", "Fisk")
+
+extract_ <- randomEventFunc(tilePos, player_Data)
+extract_
+```

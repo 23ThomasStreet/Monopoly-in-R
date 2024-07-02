@@ -33,7 +33,6 @@ results.
 * Clean code, print-outs / comments / code disposition
 * Fix bugs related to owning property when color-monopoly has been mortaged
 * Double check Official Monopoly rules and adherence to R-simulation
-
 * Implement out-put statistics for when a player has won the game
 * Implement correct rent and monopoly logic for power-plant tiles / water-work tiles and rail-road tiles
 * Implement selling of mortaged tiles

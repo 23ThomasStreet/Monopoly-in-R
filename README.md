@@ -1,4 +1,4 @@
-_**Monopoly_R V.4.0**_
+_**Monopoly_R V.5.0**_
 
 Monopoly in R is a Monopoly simulator to quickly simulate a select amount of games
 and get descriptive statistics of the outcomes. The project is made to be easy to 
@@ -30,7 +30,7 @@ results.
 * Implemented gathering of individual game statistics
 
 **Wishlist for V.6.0:**
-* Go through checks on simulations 'original Monopoly rule' compliance (play through game at slow speed whilst checking with rule-book)
+* Go through checks on simulations 'original Monopoly rule' compliance (play through game at slow speed whilst checking with rule-book) Check:
   * Utilities trigger
   * Randomized beginning player
   * Bankruptcy mechanic

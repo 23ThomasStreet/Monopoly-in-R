@@ -7,7 +7,6 @@ results.
 
 _This particular version was used to produce the control group observations for my georgism experiment.
 _
-<code style="color : red"> NOTE TO SELF: I should try using R.shiny for my game. </code>
 
 <img src="https://github.com/23ThomasStreet/Monopoly-in-R/blob/main-v.5/monopolyReal.jpeg?raw=true?" width="500">
 

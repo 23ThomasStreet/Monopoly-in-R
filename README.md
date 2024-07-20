@@ -19,7 +19,7 @@ results.
 
 
 **Included in this version:**
-* --..-- Ver.5.0
+* --..-- Ver.4.0
 * Cleaned code, print-outs, comments and code disposition
 * Double checked Official Monopoly rules and adherence to R-simulation
 * Fixed bugs related to owning property when color-monopoly has been mortaged
